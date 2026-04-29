@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="hero">
+
+    <h1>Halo, {{ nama }}</h1>
+
+    <p>
+        Selamat datang kembali di Child of Nature.
+        Mau naik gunung, trip privat, atau cari guide lokal?
+    </p>
+
+    <div class="hero-buttons">
+        <a href="#layanan" class="btn">Mulai Jelajah</a>
+        <a href="/my-bookings" class="btn">Booking Saya</a>
+    </div>
+
+</section>
+
+
+<section id="layanan" class="container">
+
+<h1 style="text-align:center;">Pilih Perjalananmu</h1>
+
+<p style="text-align:center; margin-bottom:35px;">
+Kami siapkan pengalaman terbaik dari Wonosobo dan sekitarnya.
+</p>
+
+<div class="services">
+
+    <div class="card service-card">
+
+        <h2>🏔 Open Trip</h2>
+
+        <p>
+            Gabung peserta lain ke gunung favorit Jawa Tengah.
+        </p>
+
+        <a href="/packages" class="btn">Lihat Trip</a>
+
+    </div>
+
+
+    <div class="card service-card">
+
+        <h2>🎒 Private Trip</h2>
+
+        <p>
+            Trip privat dengan jadwal fleksibel dan nyaman.
+        </p>
+
+        <a href="/booking/Private-Trip" class="btn">Booking</a>
+
+    </div>
+
+
+    <div class="card service-card">
+
+        <h2>🧭 Tour Guide</h2>
+
+        <p>
+            Guide lokal Wonosobo, Dieng, dan jalur sekitar.
+        </p>
+
+        <a href="/booking/Tour-Guide" class="btn">Cari Guide</a>
+
+    </div>
+
+</div>
+
+</section>
+
+
+<section class="container">
+
+<div class="card premium-card">
+
+<h1>Akses Cepat</h1>
+
+<div class="feature-grid">
+
+    <div class="mini-box">
+        <h3>Booking Saya</h3>
+        <p>Lihat status pesananmu.</p>
+        <a href="/my-bookings" class="btn">Buka</a>
+    </div>
+
+    <div class="mini-box">
+        <h3>Profil</h3>
+        <p>Kelola akun dan data diri.</p>
+        <a href="/profile" class="btn">Buka</a>
+    </div>
+
+    <div class="mini-box">
+        <h3>Trip Baru</h3>
+        <p>Cari petualangan berikutnya.</p>
+        <a href="/packages" class="btn">Lihat</a>
+    </div>
+
+</div>
+
+</div>
+
+</section>
+
+{% endblock %}

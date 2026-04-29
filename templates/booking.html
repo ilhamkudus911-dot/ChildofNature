@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="hero">
+
+    <h1>Booking {{ trip_name }}</h1>
+
+    <p>
+        Lengkapi data berikut untuk memesan perjalananmu.
+        Petualangan besar selalu dimulai dari form sederhana.
+    </p>
+
+</section>
+
+
+<section class="profile-page">
+
+<div class="profile-card">
+
+<form method="POST">
+
+    <input
+        type="text"
+        name="full_name"
+        placeholder="Nama Lengkap"
+        required
+    >
+
+    <input
+        type="text"
+        name="phone"
+        placeholder="Nomor WhatsApp"
+        required
+    >
+
+    <input
+        type="number"
+        name="people"
+        placeholder="Jumlah Peserta"
+        min="1"
+        required
+    >
+
+    <input
+        type="date"
+        name="trip_date"
+        required
+    >
+
+    <textarea
+        name="note"
+        placeholder="Catatan tambahan (opsional)"
+    ></textarea>
+
+    <button class="btn">
+        Kirim Booking
+    </button>
+
+</form>
+
+</div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="profile-page">
+
+<div class="profile-card">
+
+    <h1>Edit Profil</h1>
+
+    <p>
+        Perbarui data akunmu. Kadang manusia juga butuh versi terbaru.
+    </p>
+
+    <form method="POST" enctype="multipart/form-data">
+
+        <input
+            type="text"
+            name="fullname"
+            placeholder="Nama Lengkap"
+            value="{{ user[2] }}"
+        >
+
+        <textarea
+            name="bio"
+            placeholder="Tulis bio singkat..."
+        >{{ user[3] }}</textarea>
+
+        <input
+            type="file"
+            name="photo"
+        >
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Password Baru (opsional)"
+        >
+
+        <button class="btn">Simpan Perubahan</button>
+
+    </form>
+
+    <div class="profile-buttons">
+        <a href="/profile" class="btn">Kembali</a>
+    </div>
+
+</div>
+
+</section>
+
+{% endblock %}

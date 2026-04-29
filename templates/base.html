@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Child of Nature</title>
+
+    <link rel="preload" as="image"
+    href="{{ url_for('static', filename='bg.webp') }}">
+
+    <link rel="stylesheet"
+    href="{{ url_for('static', filename='style.css') }}">
+
+</head>
+
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+
+    <div class="logo">CON</div>
+
+    <div class="menu">
+
+    {% if "user" in session %}
+
+        <a href="/dashboard">Dashboard</a>
+        <a href="/my-bookings">Booking Saya</a>
+
+    {% if session["role"] == "admin" %}
+        <a href="/admin">Admin Panel</a>
+    {% endif %}
+
+        <a href="/profile">Profile</a>
+        <a href="/logout">Logout</a>
+
+    {% else %}
+
+        <a href="/">Home</a>
+        <a href="/about">About</a>
+        <a href="/contact">Contact</a>
+        <a href="/login">Masuk</a>
+        <a href="/register">Daftar</a>
+
+    {% endif %}
+
+    </div>
+
+</nav>
+
+
+<!-- FLASH MESSAGE -->
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+
+    {% for message in messages %}
+        <div class="flash-message">
+            {{ message }}
+        </div>
+    {% endfor %}
+
+{% endif %}
+{% endwith %}
+
+
+<!-- CONTENT -->
+<section class="container" id="page-content">
+
+{% block content %}{% endblock %}
+
+</section>
+
+
+<!-- FOOTER -->
+<footer class="footer">
+
+    <a href="/about">About Us</a>
+    <a href="/contact">Contact Us</a>
+
+    <p>© 2026 Child of Nature</p>
+
+</footer>
+
+
+<!-- PAGE TRANSITION -->
+<script>
+
+document.addEventListener("DOMContentLoaded", function () {
+
+    const content = document.getElementById("page-content");
+
+    content.classList.add("fade-in");
+
+    document.querySelectorAll("a").forEach(link => {
+
+        const href = link.getAttribute("href");
+
+        if (
+            href &&
+            !href.startsWith("#") &&
+            !href.startsWith("javascript") &&
+            !link.hasAttribute("target")
+        ) {
+
+            link.addEventListener("click", function (e) {
+
+                e.preventDefault();
+
+                content.classList.remove("fade-in");
+                content.classList.add("fade-out");
+
+                setTimeout(() => {
+                    window.location.href = href;
+                }, 250);
+
+            });
+
+        }
+
+    });
+
+});
+
+</script>
+
+</body>
+</html>

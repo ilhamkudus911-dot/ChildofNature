@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="profile-page">
+
+<div class="profile-card">
+
+    <h1>Buat Akun</h1>
+
+    <p>
+        Daftar sekarang dan mulai perjalananmu bersama Child of Nature.
+    </p>
+
+    <form method="POST">
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required
+        >
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+        >
+
+        <button class="btn">Daftar</button>
+
+    </form>
+
+    {% if pesan %}
+        <p style="margin-top:15px;">{{ pesan }}</p>
+    {% endif %}
+
+    <p style="margin-top:18px;">
+        Sudah punya akun?
+        <a href="/login" style="color:cyan;">Masuk</a>
+    </p>
+
+</div>
+
+</section>
+
+{% endblock %}

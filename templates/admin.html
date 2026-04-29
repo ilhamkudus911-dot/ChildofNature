@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="stats-grid">
+
+<div class="stat-box">
+    <h2>{{ total }}</h2>
+    <p>Total Booking</p>
+</div>
+
+<div class="stat-box">
+    <h2>{{ pending }}</h2>
+    <p>Pending</p>
+</div>
+
+<div class="stat-box">
+    <h2>{{ confirmed }}</h2>
+    <p>Confirmed</p>
+</div>
+
+<div class="stat-box">
+    <h2>{{ cancelled }}</h2>
+    <p>Cancelled</p>
+</div>
+
+</section>
+
+<section class="admin-page">
+
+<h1 class="section-title">Admin Panel</h1>
+<p class="subtitle">Kelola booking customer dengan gaya yang terlalu bagus untuk localhost.</p>
+
+<div class="admin-grid">
+
+{% for item in data %}
+
+<div class="admin-card">
+
+
+<div class="admin-row">
+<span>ID Booking</span>
+<strong>#{{ item[0] }}</strong>
+</div>
+
+<div class="admin-row">
+<span>Username</span>
+<strong>{{ item[1] }}</strong>
+</div>
+
+<div class="admin-row">
+<span>Trip</span>
+<strong>{{ item[2] }}</strong>
+</div>
+
+<div class="admin-row">
+<span>Nama</span>
+<strong>{{ item[3] }}</strong>
+</div>
+
+<div class="admin-row">
+<span>WhatsApp</span>
+<strong>{{ item[4] }}</strong>
+</div>
+
+<div class="admin-row">
+<span>Peserta</span>
+<strong>{{ item[5] }} Orang</strong>
+</div>
+
+<div class="admin-row">
+<span>Tanggal</span>
+<strong>{{ item[6] }}</strong>
+</div>
+
+<div class="admin-actions">
+    <a href="/update-booking/{{ item[0] }}/Confirmed" class="btn-small confirm-btn">
+        Confirm
+    </a>
+
+    <a href="/update-booking/{{ item[0] }}/Cancelled" class="btn-small cancel-btn">
+        Cancel
+    </a>
+</div>
+
+<div class="status-bottom 
+{% if item[7] == 'Pending' %}pending
+{% elif item[7] == 'Confirmed' %}confirmed
+{% elif item[7] == 'Cancelled' %}cancelled
+{% endif %}">
+{{ item[7] }}
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="hero">
+
+    <h1>Booking Saya</h1>
+
+    <p>
+        Semua perjalananmu tersimpan di sini.
+        Untuk sekali ini hidup cukup terorganisir.
+    </p>
+
+</section>
+
+
+<section class="container">
+
+{% if data %}
+
+<div class="services">
+
+{% for item in data %}
+
+<div class="card service-card">
+
+    <h2>{{ item[0] }}</h2>
+
+    <p><strong>Nama:</strong> {{ item[1] }}</p>
+
+    <p><strong>Tanggal:</strong> {{ item[2] }}</p>
+
+    <p>
+        <strong>Status:</strong>
+
+        {% if item[3] == "Pending" %}
+            <span class="status pending">Pending</span>
+
+        {% elif item[3] == "Confirmed" %}
+            <span class="status confirmed">Confirmed</span>
+
+        {% elif item[3] == "Completed" %}
+            <span class="status done">Completed</span>
+
+        {% else %}
+            <span class="status cancel">{{ item[3] }}</span>
+        {% endif %}
+    </p>
+
+    <div class="hero-buttons">
+        <a href="https://wa.me/6281234567890" target="_blank" class="btn">
+            Hubungi Admin
+        </a>
+
+        <a href="/packages" class="btn">
+            Booking Lagi
+        </a>
+    </div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+{% else %}
+
+<div class="card premium-card">
+
+    <h1>Belum Ada Booking</h1>
+
+    <p>
+        Kamu belum memesan trip apa pun.
+        Alam menunggu, sementara kamu menunda.
+    </p>
+
+    <a href="/packages" class="btn">Cari Trip</a>
+
+</div>
+
+{% endif %}
+
+</section>
+
+{% endblock %}

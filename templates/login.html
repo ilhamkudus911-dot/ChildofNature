@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="profile-page">
+
+<div class="profile-card">
+
+    <h1>Masuk</h1>
+
+    <p>
+        Selamat datang kembali. Alam masih di sana,
+        dan akunmu juga semoga.
+    </p>
+
+    <form method="POST">
+
+        <input
+            type="text"
+            name="username"
+            placeholder="Username"
+            required
+        >
+
+        <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            required
+        >
+
+        <button class="btn">Login</button>
+
+    </form>
+
+    {% if pesan %}
+        <p style="margin-top:15px;">{{ pesan }}</p>
+    {% endif %}
+
+    <p style="margin-top:18px;">
+        Belum punya akun?
+        <a href="/register" style="color:cyan;">Daftar</a>
+    </p>
+
+</div>
+
+</section>
+
+{% endblock %}

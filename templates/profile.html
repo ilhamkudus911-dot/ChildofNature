@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="profile-page">
+
+<div class="profile-card">
+
+    <img src="{{ url_for('static', filename='uploads/' + user[1]) }}" alt="Foto Profil">
+
+    <h2>
+        {% if user[2] %}
+            {{ user[2] }}
+        {% else %}
+            {{ user[0] }}
+        {% endif %}
+    </h2>
+
+    <p>@{{ user[0] }}</p>
+
+    {% if user[3] %}
+        <p>{{ user[3] }}</p>
+    {% else %}
+        <p>Belum ada bio. Misterius sekali.</p>
+    {% endif %}
+
+    <div class="profile-buttons">
+
+        <a href="/edit-profile" class="btn">Edit Profil</a>
+
+        <a href="/my-bookings" class="btn">Booking Saya</a>
+
+    </div>
+
+</div>
+
+</section>
+
+{% endblock %}
