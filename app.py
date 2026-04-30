@@ -3,6 +3,22 @@ from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from werkzeug.utils import secure_filename
+import sqlite3
+
+conn = sqlite3.connect("database.db")
+cur = conn.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT,
+    password TEXT,
+    role TEXT
+)
+""")
+
+conn.commit()
+conn.close()
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "static/uploads"
