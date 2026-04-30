@@ -3,36 +3,40 @@ from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from werkzeug.utils import secure_filename
-import sqlite3
-
-conn = sqlite3.connect("database.db")
-cur = conn.cursor()
-
-cur.execute("""
-CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT,
-    password TEXT,
-    role TEXT
-)
-""")
-
-conn.commit()
-conn.close()
 
 app = Flask(__name__)
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 app.secret_key = "CON_9x7A!mK2#pQ8$vL1@Nature_2026"
 
-# HOME
+# ================= DATABASE INIT =================
+def init_db():
+    conn = sqlite3.connect("database_new.db")
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT,
+        role TEXT DEFAULT 'user',
+        photo TEXT DEFAULT 'default.png',
+        fullname TEXT,
+        bio TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# ================= HOME =================
 @app.route("/")
 def home():
-
     photo = "default.png"
 
     if "user" in session:
-
-        conn = sqlite3.connect("database.db")
+        conn = sqlite3.connect("database_new.db")
         cur = conn.cursor()
 
         cur.execute(
@@ -43,14 +47,12 @@ def home():
         user = cur.fetchone()
         conn.close()
 
-        if user:
+        if user and user[0]:
             photo = user[0]
 
-    return render_template(
-        "home.html",
-        session_photo=photo
-    )
-# REGISTER
+    return render_template("home.html", session_photo=photo)
+
+# ================= REGISTER =================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     pesan = ""
@@ -60,50 +62,34 @@ def register():
         password = request.form["password"]
 
         if len(username) < 3:
-            pesan = "Username minimal 3 karakter"
-            return render_template("register.html", pesan=pesan)
+            return render_template("register.html", pesan="Username minimal 3 karakter")
 
         if len(password) < 6:
-            pesan = "Password minimal 6 karakter"
-            return render_template("register.html", pesan=pesan)
+            return render_template("register.html", pesan="Password minimal 6 karakter")
 
         hashed_password = generate_password_hash(password)
 
-        conn = sqlite3.connect("database.db")
+        conn = sqlite3.connect("database_new.db")
         cur = conn.cursor()
 
-        cur.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY,
-            username TEXT UNIQUE,
-            password TEXT,
-            photo TEXT,
-            fullname TEXT,
-            bio TEXT
-        )
-        """)
-
         try:
-            cur.execute(
-                """
-                INSERT INTO users (username, password, photo, fullname, bio) VALUES (?, ?, ?, ?, ?)
-                """,
-                (username, hashed_password, "default.png", "", "")
-            )   
+            cur.execute("""
+                INSERT INTO users (username, password, role, photo, fullname, bio)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (username, hashed_password, "user", "default.png", "", ""))
 
             conn.commit()
-            pesan = "Akun berhasil dibuat"
-        except:
+            flash("Akun berhasil dibuat!")
+            return redirect("/login")
+
+        except sqlite3.IntegrityError:
             pesan = "Username sudah dipakai"
 
         conn.close()
 
-        flash("Akun berhasil dibuat!")
-        return redirect("/")
-
     return render_template("register.html", pesan=pesan)
 
-# LOGIN
+# ================= LOGIN =================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     pesan = ""
@@ -124,13 +110,11 @@ def login():
         conn.close()
 
         if user:
-            db_username = user[0]
-            db_password = user[1]
-            db_role = user[2]
+            db_username, db_password, db_role = user
 
             if check_password_hash(db_password, password):
                 session["user"] = db_username
-                session["role"] = db_role
+                session["role"] = db_role if db_role else "user"
                 return redirect("/dashboard")
             else:
                 pesan = "Password salah"
@@ -139,302 +123,20 @@ def login():
 
     return render_template("login.html", pesan=pesan)
 
-# DASHBOARD
+# ================= DASHBOARD =================
 @app.route("/dashboard")
 def dashboard():
     if "user" in session:
         return render_template("dashboard.html", nama=session["user"])
     return redirect("/login")
 
-# PROFILE
-@app.route("/profile")
-def profile():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        SELECT username, photo, fullname, bio
-        FROM users
-        WHERE username=?
-        """,
-        (session["user"],)
-    )
-
-    user = cur.fetchone()
-    conn.close()
-
-    return render_template("profile.html", user=user)
-
-# GANTI PASSWORD
-@app.route("/change-password", methods=["GET", "POST"])
-def change_password():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    pesan = ""
-
-    if request.method == "POST":
-
-        new_password = request.form["password"]
-        hashed_password = generate_password_hash(new_password)
-
-        conn = sqlite3.connect("database.db")
-        cur = conn.cursor()
-
-        cur.execute(
-            "UPDATE users SET password=? WHERE username=?",
-            (hashed_password, session["user"])
-        )
-
-        conn.commit()
-        conn.close()
-
-        pesan = "Password berhasil diubah"
-
-    return render_template("change_password.html", pesan=pesan)
-
-# EDIT PROFILE
-@app.route("/edit-profile", methods=["GET", "POST"])
-def edit_profile():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    username = session["user"]
-
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    if request.method == "POST":
-
-        fullname = request.form["fullname"]
-        bio = request.form["bio"]
-        new_password = request.form["password"]
-
-        if "photo" in request.files:
-            file = request.files["photo"]
-
-            if file and file.filename != "":
-                filename = secure_filename(file.filename)
-                file.save(os.path.join(app.config["UPLOAD_FOLDER"], filename))
-
-                cur.execute(
-                    "UPDATE users SET photo=? WHERE username=?",
-                    (filename, username)
-                )
-
-        cur.execute(
-            "UPDATE users SET fullname=?, bio=? WHERE username=?",
-            (fullname, bio, username)
-        )
-
-        if new_password != "":
-            hashed = generate_password_hash(new_password)
-
-            cur.execute(
-                "UPDATE users SET password=? WHERE username=?",
-                (hashed, username)
-            )
-
-        conn.commit()
-
-    cur.execute(
-        "SELECT username, photo, fullname, bio FROM users WHERE username=?",
-        (username,)
-    )
-
-    user = cur.fetchone()
-    conn.close()
-
-    return render_template("edit_profile.html", user=user)
-
-# PAKET TRIP DETAIL
-@app.route("/packages")
-def packages():
-    return render_template("packages.html")
-
-# BOOKING FORM
-@app.route("/booking/<trip_name>", methods=["GET", "POST"])
-def booking(trip_name):
-
-    if "user" not in session:
-        return redirect("/login")
-
-    if request.method == "POST":
-
-        full_name = request.form["full_name"]
-        phone = request.form["phone"]
-        people = request.form["people"]
-        trip_date = request.form["trip_date"]
-        note = request.form["note"]
-
-        if len(full_name) < 3:
-            return "Nama terlalu pendek"
-
-        if not phone.isdigit():
-            return "Nomor WhatsApp harus angka"
-
-        if len(phone) < 10:
-            return "Nomor WhatsApp tidak valid"
-
-        if int(people) < 1:
-            return "Jumlah peserta minimal 1"
-
-        conn = sqlite3.connect("database.db")
-        cur = conn.cursor()
-
-        cur.execute("""
-        INSERT INTO bookings
-        (username, trip_name, full_name, phone, people, trip_date, note, status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (
-            session["user"],
-            trip_name,
-            full_name,
-            phone,
-            people,
-            trip_date,
-            note,
-            "Pending"
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/my-bookings")
-
-    return render_template("booking.html", trip_name=trip_name)
-
-# LIHAT BOOKING
-@app.route("/my-bookings")
-def my_bookings():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute("""
-    SELECT trip_name, full_name, trip_date, status
-    FROM bookings
-    WHERE username=?
-    ORDER BY id DESC
-    """, (session["user"],))
-
-    data = cur.fetchall()
-    conn.close()
-
-    return render_template("my_bookings.html", data=data)
-
-# ABOUT US
-@app.route("/about")
-def about():
-    return render_template("about.html")
-
-# CONTACT US
-@app.route("/contact")
-def contact():
-    return render_template("contact.html")
-
-# LOGOUT
+# ================= LOGOUT =================
 @app.route("/logout")
 def logout():
-    session.pop("user", None)
+    session.clear()
     return redirect("/")
 
-# ADMIN PANEL
-@app.route("/admin")
-def admin():
-
-    if "user" not in session:
-        return redirect("/login")
-
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute(
-        "SELECT role FROM users WHERE username=?",
-        (session["user"],)
-    )
-
-    user = cur.fetchone()
-
-    if not user:
-        conn.close()
-        return redirect("/login")
-
-    role = user[0]
-
-    if role != "admin":
-        conn.close()
-        flash("Akses ditolak.")
-        return redirect("/dashboard")
-
-    # Statistik
-    cur.execute("SELECT COUNT(*) FROM bookings")
-    total = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM bookings WHERE status='Pending'")
-    pending = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM bookings WHERE status='Confirmed'")
-    confirmed = cur.fetchone()[0]
-
-    cur.execute("SELECT COUNT(*) FROM bookings WHERE status='Cancelled'")
-    cancelled = cur.fetchone()[0]
-
-# Data booking
-    cur.execute("""
-    SELECT id, username, trip_name, full_name, phone, people, trip_date, status
-    FROM bookings
-    ORDER BY id DESC
-    """)
-
-    data = cur.fetchall()
-    conn.close()
-
-    return render_template(
-        "admin.html",
-        data=data,
-        total=total,
-        pending=pending,
-        confirmed=confirmed,
-        cancelled=cancelled
-)
-
-# UPDATE STATUS BOOKING
-@app.route("/update-booking/<int:id>/<status>")
-def update_booking(id, status):
-
-    if "user" not in session:
-        return redirect("/login")
-
-    # opsional: batasi admin tertentu
-    if session["user"] != "admin":
-        return redirect("/dashboard")
-
-    conn = sqlite3.connect("database.db")
-    cur = conn.cursor()
-
-    cur.execute(
-        "UPDATE bookings SET status=? WHERE id=?",
-        (status, id)
-    )
-
-    conn.commit()
-    conn.close()
-
-    return redirect("/admin")
-
-import os
-
+# ================= RUN =================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
