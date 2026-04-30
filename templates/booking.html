@@ -28,10 +28,11 @@
     >
 
     <input
-        type="text"
-        name="phone"
-        placeholder="Nomor WhatsApp"
-        required
+    type="tel"
+    name="phone"
+    placeholder="Nomor WhatsApp"
+    pattern="08[0-9]{8,12}"
+    required
     >
 
     <input
@@ -43,9 +44,10 @@
     >
 
     <input
-        type="date"
-        name="trip_date"
-        required
+    type="date"
+    name="trip_date"
+    min="{{ today }}"
+    required
     >
 
     <textarea

@@ -1,5 +1,7 @@
 import sqlite3
 import os
+import re
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
@@ -10,13 +12,12 @@ app.config["UPLOAD_FOLDER"] = "static/uploads"
 
 
 # =========================
-# INIT DATABASE (AUTO JALAN)
+# INIT DATABASE
 # =========================
 def init_db():
     conn = sqlite3.connect("database.db")
     cur = conn.cursor()
 
-    # USERS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +30,6 @@ def init_db():
     )
     """)
 
-    # BOOKINGS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS bookings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -48,7 +48,6 @@ def init_db():
     conn.close()
 
 
-# PENTING: jalanin saat start
 init_db()
 
 
@@ -69,7 +68,14 @@ def register():
 
     if request.method == "POST":
         username = request.form["username"]
-        password = generate_password_hash(request.form["password"])
+        raw_password = request.form["password"]
+
+        # VALIDASI PASSWORD
+        if not re.match("^[a-zA-Z0-9]{6,}$", raw_password):
+            flash("Password minimal 6 karakter dan hanya huruf & angka")
+            return redirect(request.url)
+
+        hashed_password = generate_password_hash(raw_password)
 
         conn = sqlite3.connect("database.db")
         cur = conn.cursor()
@@ -78,9 +84,9 @@ def register():
             cur.execute("""
             INSERT INTO users (username, password)
             VALUES (?, ?)
-            """, (username, password))
-            conn.commit()
+            """, (username, hashed_password))
 
+            conn.commit()
             flash("Akun berhasil dibuat")
             return redirect("/login")
 
@@ -152,6 +158,73 @@ def profile():
 
 
 # =========================
+# EDIT PROFILE
+# =========================
+@app.route("/edit-profile", methods=["GET", "POST"])
+def edit_profile():
+
+    if "user" not in session:
+        return redirect("/login")
+
+    username = session["user"]
+
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    if request.method == "POST":
+
+        fullname = request.form.get("fullname", "")
+        bio = request.form.get("bio", "")
+        new_password = request.form.get("password", "")
+
+        # Upload foto
+        if "photo" in request.files:
+            file = request.files["photo"]
+
+            if file and file.filename != "":
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+
+                os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+                file.save(filepath)
+
+                cur.execute(
+                    "UPDATE users SET photo=? WHERE username=?",
+                    (filename, username)
+                )
+
+        # Update data
+        cur.execute(
+            "UPDATE users SET fullname=?, bio=? WHERE username=?",
+            (fullname, bio, username)
+        )
+
+        # Update password
+        if new_password:
+            if not re.match("^[a-zA-Z0-9]{6,}$", new_password):
+                flash("Password hanya huruf & angka (min 6)")
+                return redirect(request.url)
+
+            hashed = generate_password_hash(new_password)
+            cur.execute(
+                "UPDATE users SET password=? WHERE username=?",
+                (hashed, username)
+            )
+
+        conn.commit()
+
+    cur.execute(
+        "SELECT username, photo, fullname, bio FROM users WHERE username=?",
+        (username,)
+    )
+
+    user = cur.fetchone()
+    conn.close()
+
+    return render_template("edit_profile.html", user=user)
+
+
+# =========================
 # PACKAGES
 # =========================
 @app.route("/packages")
@@ -169,6 +242,23 @@ def booking(trip_name):
         return redirect("/login")
 
     if request.method == "POST":
+
+        phone = request.form["phone"]
+
+        # VALIDASI WA
+        if not phone.isdigit() or not phone.startswith("08") or len(phone) < 10:
+            flash("Nomor WA tidak valid")
+            return redirect(request.url)
+
+        trip_date = request.form["trip_date"]
+
+        today = datetime.now().date()
+        input_date = datetime.strptime(trip_date, "%Y-%m-%d").date()
+
+        if input_date < today:
+            flash("Tanggal tidak boleh di masa lalu")
+            return redirect(request.url)
+
         conn = sqlite3.connect("database.db")
         cur = conn.cursor()
 
@@ -180,9 +270,9 @@ def booking(trip_name):
             session["user"],
             trip_name,
             request.form["full_name"],
-            request.form["phone"],
+            phone,
             request.form["people"],
-            request.form["trip_date"],
+            trip_date,
             request.form["note"],
             "Pending"
         ))
@@ -192,7 +282,11 @@ def booking(trip_name):
 
         return redirect("/my-bookings")
 
-    return render_template("booking.html", trip_name=trip_name)
+    return render_template(
+        "booking.html",
+        trip_name=trip_name,
+        today=datetime.now().date()
+    )
 
 
 # =========================
@@ -220,7 +314,7 @@ def my_bookings():
 
 
 # =========================
-# ABOUT & CONTACT (FIX)
+# ABOUT & CONTACT
 # =========================
 @app.route("/about")
 def about():
@@ -242,7 +336,7 @@ def logout():
 
 
 # =========================
-# RUN (RAILWAY READY)
+# RUN
 # =========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
