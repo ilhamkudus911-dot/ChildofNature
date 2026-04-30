@@ -5,6 +5,8 @@ from datetime import datetime
 from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
+os.makedirs("static/uploads", exist_ok=True)
+app.config['MAX_CONTENT_LENGTH'] = 2 * 1024 * 1024  # max 2MB
 
 app = Flask(__name__)
 app.secret_key = "CON_secure_key_2026"
