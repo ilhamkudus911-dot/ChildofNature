@@ -1,95 +1,100 @@
 import sqlite3
+import os
 from flask import Flask, render_template, request, redirect, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
-import os
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.secret_key = "CON_secure_key_2026"
 app.config["UPLOAD_FOLDER"] = "static/uploads"
-app.secret_key = "CON_9x7A!mK2#pQ8$vL1@Nature_2026"
 
-# ================= DATABASE INIT =================
+
+# =========================
+# INIT DATABASE (AUTO JALAN)
+# =========================
 def init_db():
-    conn = sqlite3.connect("database_new.db")
+    conn = sqlite3.connect("database.db")
     cur = conn.cursor()
 
+    # USERS
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT,
-        role TEXT DEFAULT 'user',
         photo TEXT DEFAULT 'default.png',
         fullname TEXT,
-        bio TEXT
+        bio TEXT,
+        role TEXT DEFAULT 'user'
+    )
+    """)
+
+    # BOOKINGS
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS bookings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        trip_name TEXT,
+        full_name TEXT,
+        phone TEXT,
+        people TEXT,
+        trip_date TEXT,
+        note TEXT,
+        status TEXT
     )
     """)
 
     conn.commit()
     conn.close()
 
+
+# PENTING: jalanin saat start
 init_db()
 
-# ================= HOME =================
+
+# =========================
+# HOME
+# =========================
 @app.route("/")
 def home():
-    photo = "default.png"
+    return render_template("home.html")
 
-    if "user" in session:
-        conn = sqlite3.connect("database_new.db")
-        cur = conn.cursor()
 
-        cur.execute(
-            "SELECT photo FROM users WHERE username=?",
-            (session["user"],)
-        )
-
-        user = cur.fetchone()
-        conn.close()
-
-        if user and user[0]:
-            photo = user[0]
-
-    return render_template("home.html", session_photo=photo)
-
-# ================= REGISTER =================
+# =========================
+# REGISTER
+# =========================
 @app.route("/register", methods=["GET", "POST"])
 def register():
     pesan = ""
 
     if request.method == "POST":
         username = request.form["username"]
-        password = request.form["password"]
+        password = generate_password_hash(request.form["password"])
 
-        if len(username) < 3:
-            return render_template("register.html", pesan="Username minimal 3 karakter")
-
-        if len(password) < 6:
-            return render_template("register.html", pesan="Password minimal 6 karakter")
-
-        hashed_password = generate_password_hash(password)
-
-        conn = sqlite3.connect("database_new.db")
+        conn = sqlite3.connect("database.db")
         cur = conn.cursor()
 
         try:
             cur.execute("""
-                INSERT INTO users (username, password, role, photo, fullname, bio)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """, (username, hashed_password, "user", "default.png", "", ""))
-
+            INSERT INTO users (username, password)
+            VALUES (?, ?)
+            """, (username, password))
             conn.commit()
-            flash("Akun berhasil dibuat!")
+
+            flash("Akun berhasil dibuat")
             return redirect("/login")
 
-        except sqlite3.IntegrityError:
+        except:
             pesan = "Username sudah dipakai"
 
         conn.close()
 
     return render_template("register.html", pesan=pesan)
 
-# ================= LOGIN =================
+
+# =========================
+# LOGIN
+# =========================
 @app.route("/login", methods=["GET", "POST"])
 def login():
     pesan = ""
@@ -101,42 +106,143 @@ def login():
         conn = sqlite3.connect("database.db")
         cur = conn.cursor()
 
-        cur.execute(
-            "SELECT username, password, role FROM users WHERE username=?",
-            (username,)
-        )
-
+        cur.execute("SELECT username, password FROM users WHERE username=?", (username,))
         user = cur.fetchone()
         conn.close()
 
-        if user:
-            db_username, db_password, db_role = user
-
-            if check_password_hash(db_password, password):
-                session["user"] = db_username
-                session["role"] = db_role if db_role else "user"
-                return redirect("/dashboard")
-            else:
-                pesan = "Password salah"
+        if user and check_password_hash(user[1], password):
+            session["user"] = user[0]
+            return redirect("/dashboard")
         else:
-            pesan = "Username tidak ditemukan"
+            pesan = "Login gagal"
 
     return render_template("login.html", pesan=pesan)
 
-# ================= DASHBOARD =================
+
+# =========================
+# DASHBOARD
+# =========================
 @app.route("/dashboard")
 def dashboard():
-    if "user" in session:
-        return render_template("dashboard.html", nama=session["user"])
-    return redirect("/login")
+    if "user" not in session:
+        return redirect("/login")
+    return render_template("dashboard.html", nama=session["user"])
 
-# ================= LOGOUT =================
+
+# =========================
+# PROFILE
+# =========================
+@app.route("/profile")
+def profile():
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    cur.execute("""
+    SELECT username, photo, fullname, bio
+    FROM users WHERE username=?
+    """, (session["user"],))
+
+    user = cur.fetchone()
+    conn.close()
+
+    return render_template("profile.html", user=user)
+
+
+# =========================
+# PACKAGES
+# =========================
+@app.route("/packages")
+def packages():
+    return render_template("packages.html")
+
+
+# =========================
+# BOOKING
+# =========================
+@app.route("/booking/<trip_name>", methods=["GET", "POST"])
+def booking(trip_name):
+
+    if "user" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+        conn = sqlite3.connect("database.db")
+        cur = conn.cursor()
+
+        cur.execute("""
+        INSERT INTO bookings
+        (username, trip_name, full_name, phone, people, trip_date, note, status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            session["user"],
+            trip_name,
+            request.form["full_name"],
+            request.form["phone"],
+            request.form["people"],
+            request.form["trip_date"],
+            request.form["note"],
+            "Pending"
+        ))
+
+        conn.commit()
+        conn.close()
+
+        return redirect("/my-bookings")
+
+    return render_template("booking.html", trip_name=trip_name)
+
+
+# =========================
+# MY BOOKINGS
+# =========================
+@app.route("/my-bookings")
+def my_bookings():
+
+    if "user" not in session:
+        return redirect("/login")
+
+    conn = sqlite3.connect("database.db")
+    cur = conn.cursor()
+
+    cur.execute("""
+    SELECT trip_name, full_name, trip_date, status
+    FROM bookings WHERE username=?
+    ORDER BY id DESC
+    """, (session["user"],))
+
+    data = cur.fetchall()
+    conn.close()
+
+    return render_template("my_bookings.html", data=data)
+
+
+# =========================
+# ABOUT & CONTACT (FIX)
+# =========================
+@app.route("/about")
+def about():
+    return render_template("about.html")
+
+
+@app.route("/contact")
+def contact():
+    return render_template("contact.html")
+
+
+# =========================
+# LOGOUT
+# =========================
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/")
 
-# ================= RUN =================
+
+# =========================
+# RUN (RAILWAY READY)
+# =========================
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
